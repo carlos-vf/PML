@@ -1,5 +1,9 @@
 # Probabilistic-Deep-Forest
 
+> [!NOTE]  
+> Use Python 3.7 (only versions 3.7, 3.8 and 3.9 are compatible with `deep-forest` package. However, I only manage to make it work for 3.7.)
+
+
 ## To Do
 
 1. Set up PRF (prepare enviroment and test the code) (any dataset)
