@@ -30,3 +30,4 @@
 - **Datasets**:
   - Noisy dataset (from PRF authors): https://github.com/ireis/PRF/tree/master/PRF/examples/data
   - MACHO Project: https://wwwmacho.anu.edu.au/
+  - Keel dataset repository: https://sci2s.ugr.es/keel/datasets.php
