@@ -78,3 +78,97 @@ def add_noise(X, noise_type='gaussian',
         X_test_noisy = X_test + dX_test
 
     return X_train_noisy, X_test_noisy, dX, dX_test
+
+
+def add_label_noise(
+    y,
+    apply_to_test=False,
+    y_test=None,
+    noise_level=0.1,
+    mode="proportion",  # "proportion" or "random_prob"
+    prob_range=(0.0, 0.5),
+    random_seed=27
+):
+    """
+    Add noise to labels y, either by flipping a fixed proportion (mode='proportion')
+    or by assigning each sample a noise probability from a uniform distribution (mode='random_prob').
+
+    Parameters:
+    - y: np.array shape (n_samples,)
+    - apply_to_test: bool, whether to apply noise to y_test as well
+    - y_test: np.array, test set labels to apply noise if apply_to_test=True
+    - noise_level: float, proportion of labels to flip (used only in 'proportion' mode)
+    - mode: str, either 'proportion' or 'random_prob'
+    - prob_range: tuple, min and max noise probability per sample (used in 'random_prob' mode)
+    - random_seed: int, random seed for reproducibility
+
+    Returns:
+    - y_noisy: np.array, noisy version of y
+    - y_test_noisy: np.array or None, noisy version of y_test if apply_to_test else None
+    - probs_y: np.array of shape (n_samples,), noise probability per training sample
+    - probs_y_test: np.array or None, same for test samples if apply_to_test else None
+    """
+
+    # Checking input
+    
+    if not (0 <= noise_level <= 1):
+        raise ValueError("noise_level must be between 0 and 1.")
+
+    if mode == "random_prob":
+        if not (0 <= prob_range[0] <= 1) or not (0 <= prob_range[1] <= 1):
+            raise ValueError("prob_range values must both be between 0 and 1.")
+        if prob_range[0] > prob_range[1]:
+            raise ValueError("prob_range[0] must be <= prob_range[1].")
+ 
+    np.random.seed(random_seed)
+
+    unique_labels = np.unique(y)
+    y_noisy = y.copy()
+
+    if mode == "proportion":
+        probs_y = np.full(len(y), noise_level)
+        n_flip = int(noise_level * len(y))
+        indices = np.random.choice(len(y), size=n_flip, replace=False)
+        for idx in indices:
+            current_label = y_noisy[idx]
+            new_label = np.random.choice([l for l in unique_labels if l != current_label])
+            y_noisy[idx] = new_label
+
+    elif mode == "random_prob":
+        min_p, max_p = prob_range
+        probs_y = np.random.uniform(min_p, max_p, size=len(y))
+        for idx, p in enumerate(probs_y):
+            if np.random.rand() < p:
+                current_label = y_noisy[idx]
+                new_label = np.random.choice([l for l in unique_labels if l != current_label])
+                y_noisy[idx] = new_label
+    else:
+        raise ValueError("mode must be either 'proportion' or 'random_prob'")
+
+    y_test_noisy = None
+    probs_y_test = None
+    if apply_to_test:
+        if y_test is None:
+            raise ValueError("y_test must be provided if apply_to_test=True")
+
+        y_test_noisy = y_test.copy()
+
+        if mode == "proportion":
+            probs_y_test = np.full(len(y_test), noise_level)
+            n_flip_test = int(noise_level * len(y_test))
+            indices_test = np.random.choice(len(y_test), size=n_flip_test, replace=False)
+            for idx in indices_test:
+                current_label = y_test_noisy[idx]
+                new_label = np.random.choice([l for l in unique_labels if l != current_label])
+                y_test_noisy[idx] = new_label
+
+        elif mode == "random_prob":
+            min_p, max_p = prob_range
+            probs_y_test = np.random.uniform(min_p, max_p, size=len(y_test))
+            for idx, p in enumerate(probs_y_test):
+                if np.random.rand() < p:
+                    current_label = y_test_noisy[idx]
+                    new_label = np.random.choice([l for l in unique_labels if l != current_label])
+                    y_test_noisy[idx] = new_label
+
+    return y_noisy, y_test_noisy, probs_y, probs_y_test
