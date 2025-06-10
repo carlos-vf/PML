@@ -200,15 +200,12 @@ def add_label_noise(
 
         elif mode == "random_prob":
             min_p, max_p = prob_range
-            flip_probs_test = np.random.uniform(min_p, max_p, size=len(y_test))
-            for idx, flip_prob in enumerate(flip_probs_test):
-                true_label = y_test[idx]
-                probs_y_test[idx] = build_prob_dist(true_label, flip_prob)
-                if np.random.rand() < flip_prob:
-                    current_label = y_test_noisy[idx]
-                    possible_new_labels = [l for l in unique_labels if l != current_label]
-                    if possible_new_labels:
-                        new_label = np.random.choice(possible_new_labels)
-                        y_test_noisy[idx] = new_label
+            flip_probs = np.random.uniform(min_p, max_p, size=len(y))
+            for idx, flip_prob in enumerate(flip_probs):
+                true_label = y[idx]
+                probs_y[idx] = build_prob_dist(true_label, flip_prob)
+                # Remove the explicit flip - it's already handled in the probability distribution
+                # The noisy label will be sampled from this distribution later if needed
+                y_noisy[idx] = true_label  # Keep original label by default
     
     return y_noisy, y_test_noisy, probs_y, probs_y_test
