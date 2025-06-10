@@ -48,6 +48,7 @@ def run_pipeline(config):
     seeds = config.get('seeds', [27, 272, 2727, 1, 30])  # default seeds
     noise_scale = config.get('noise_scale', 0.0)  # default noise 0.0
     label_noise_scale = config.get('label_noise_scale', 0.0)  # default noise 0.0
+    label_noise_range = config.get('label_noise_range', (0.0, 0.5))  # default range
     noise_type = config.get('noise_type', "gaussian")  # default noise 0.0
 
     print(f"--- DEBUG: Current noise_scale from config: {noise_scale} ---")
@@ -59,10 +60,22 @@ def run_pipeline(config):
         train_path=dataset_path,
         already_split=False
     )
-
+    # Ensure labels are adjusted to start from 0
+    y_train = y_train - 1  
+    y_test = y_test - 1  
     # Add noise to train set
     X_train_noisy, _, dX, _ = add_noise(X_train, noise_type=noise_type, noise_scale=noise_scale)
-    y_train_noisy, _, pY, _ = add_label_noise(y_train, mode="random_prob", noise_level=label_noise_scale, random_seed=30)
+    y_train_noisy, _, py, _ = add_label_noise(y_train, mode="random_prob", noise_level=label_noise_scale, random_seed=30, prob_range=label_noise_range)
+
+    # print label noise scale for debugging
+    print(f"--- DEBUG: label_noise_scale: {label_noise_scale} ---")
+    # print head of py for debugging
+    print(f"--- DEBUG: py head: {py[:10]} ---")
+    #print head of y_train for debugging
+    print(f"--- DEBUG: y_train head: {y_train[:10]} ---")
+    # print head of y_train_noisy for debugging
+    print(f"--- DEBUG: y_train_noisy head: {y_train_noisy[:10]} ---")
+
 
     n_classes = len(label_map)
     n_features = X_train.shape[1]
@@ -89,7 +102,7 @@ def run_pipeline(config):
                 )
                 prf_estimators.append(estimator)
             model.set_estimator(prf_estimators)
-            model.fit(X=X_train_noisy, y=y_train, dX=dX)
+            model.fit(X=X_train_noisy, y=y_train_noisy, dX=dX, py=py)
             y_pred = model.predict(X_test)
             acc = accuracy_score(y_pred, y_test)
             accuracies_PDRF.append(acc)
@@ -102,7 +115,7 @@ def run_pipeline(config):
         for seed in seeds:
             set_all_seeds(seed)
             rf = RandomForestClassifier(n_estimators=n_estimators, random_state=seed)
-            rf.fit(X_train_noisy, y_train)
+            rf.fit(X_train_noisy, y_train_noisy)
             y_pred = rf.predict(X_test)
             acc = accuracy_score(y_test, y_pred)
             accuracies_RF.append(acc)
@@ -117,7 +130,7 @@ def run_pipeline(config):
         for seed in seeds:
             set_all_seeds(seed)
             clf = CascadeForestClassifier(n_estimators=n_estimators, random_state=seed, n_trees=n_trees_drf)
-            clf.fit(X_train_noisy, y_train)
+            clf.fit(X_train_noisy, y_train_noisy)
             y_pred = clf.predict(X_test)
             acc = accuracy_score(y_test, y_pred)
             accuracies_DF.append(acc)
@@ -134,15 +147,15 @@ def run_pipeline(config):
 
         accuracies_NN = []
 
-        unique_classes = np.unique(y_train)
+        unique_classes = np.unique(y_train_noisy)
         num_classes = len(unique_classes)
         is_binary = num_classes == 2
 
         if not is_binary:
-            y_train_cat = to_categorical(np.searchsorted(unique_classes, y_train))
+            y_train_cat = to_categorical(np.searchsorted(unique_classes, y_train_noisy))
             y_test_cat = to_categorical(np.searchsorted(unique_classes, y_test))
         else:
-            y_train_cat = y_train
+            y_train_cat = y_train_noisy
             y_test_cat = y_test
 
         for seed in seeds:
@@ -187,7 +200,7 @@ def run_pipeline(config):
             'gamma': ['scale', 'auto']
         }
         grid = GridSearchCV(model, param_grid, cv=3, n_jobs=-1)
-        grid.fit(X_train_noisy, y_train)
+        grid.fit(X_train_noisy, y_train_noisy)
         best_svm = grid.best_estimator_
 
         y_pred = best_svm.predict(X_test)
@@ -211,17 +224,11 @@ def run_pipeline(config):
         for seed in seeds:
             set_all_seeds(seed)
             prf_cls = PRF.prf(n_estimators=n_estimators, bootstrap=bootstrap, max_depth=max_depth, max_features=max_features)
-            prf_cls.fit(X=X_train_noisy, y=y_train, dX=dX)
+            prf_cls.fit(X=X_train_noisy, dX=dX, py=py)
             score = prf_cls.score(X_test, y=y_test)
             accuracies_PRF.append(score)
 
         accuracies['PRF'] = (np.mean(accuracies_PRF), np.std(accuracies_PRF))
-
-
-    # Print results
-    print(f"Results for dataset: {os.path.basename(dataset_path)}")
-    for model_name, (mean_acc, std_acc) in accuracies.items():
-        print(f"{model_name} Accuracy: {mean_acc:.4f} ± {std_acc:.4f}")
 
         # Base output directories and paths
     if noise_scale < 0.4:
@@ -248,12 +255,12 @@ def run_pipeline(config):
     output_dir = os.path.join(output_base, "plots")
     os.makedirs(output_dir, exist_ok=True)
     # Changed output_filename to include noise_type
-    output_filename = os.path.join(output_dir, f"{base_name}_{noise_filename_suffix}.png") 
+    output_filename = os.path.join(output_dir, f"{base_name}_{noise_filename_suffix}_({label_noise_range[0]},{label_noise_range[1]}).png") 
 
     csv_dir = os.path.join(output_base, "tables")
     os.makedirs(csv_dir, exist_ok=True)
     # Changed csv_path to include noise_type
-    csv_path = os.path.join(csv_dir, f"{base_name}_{noise_filename_suffix}.csv") 
+    csv_path = os.path.join(csv_dir, f"{base_name}_{noise_filename_suffix}_({label_noise_range[0]},{label_noise_range[1]}).csv") 
 
     # Create comparison dataframe
     comparison_df = pd.DataFrame({
@@ -317,7 +324,7 @@ def run_pipeline(config):
     # Include noise_type in the plot title for clarity
     fig.text(
         0.1, 0.93,
-        f"{title_name} dataset – Noise Level: {noise_scale} ({noise_type})", # Changed title to include noise_type
+        f"{title_name} dataset – Noise Levels: {noise_scale} ({noise_type}), {label_noise_range}", # Changed title to include noise_type
         ha='left',
         fontsize=14,
         fontweight='bold'

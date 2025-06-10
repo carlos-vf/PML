@@ -3,8 +3,9 @@ dataset_path: "KEEL/keel_data/iris.dat"
 seeds: [17, 42, 123, 27, 2727, 32]
 
 noise_scale: 0.8
-label_noise_scale: 0.0
+label_noise_scale: 0.2
 noise_type: "gaussian"
+label_noise_range: [0.0, 0.5]
 
 models:
   pdrf:
@@ -14,6 +15,7 @@ models:
 
   rf:
     n_estimators: 50
+
   deep_forest:
     n_estimators: 2
     n_trees_drf: 20
