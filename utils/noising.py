@@ -78,3 +78,135 @@ def add_noise(X, noise_type='gaussian',
         X_test_noisy = X_test + dX_test
 
     return X_train_noisy, X_test_noisy, dX, dX_test
+
+
+import numpy as np
+
+def add_label_noise(
+    y,
+    apply_to_test=False,
+    y_test=None,
+    noise_level=0.1,
+    mode="proportion",  # "proportion" or "random_prob"
+    prob_range=(0.0, 0.5),
+    random_seed=27
+):
+    """
+    Add noise to labels y, either by flipping a fixed proportion (mode='proportion')
+    or by assigning each sample a noise probability from a uniform distribution (mode='random_prob').
+
+    Returns:
+    - y_noisy: np.array shape (n_samples,), noisy labels
+    - y_test_noisy: np.array or None, noisy test labels if apply_to_test else None
+    - probs_y: np.array shape (n_samples, n_classes), label probability distribution per sample
+    - probs_y_test: np.array or None, same for test samples if apply_to_test else None
+    """
+
+    if not (0 <= noise_level <= 1):
+        raise ValueError("noise_level must be between 0 and 1.")
+
+    if mode == "random_prob":
+        if not (0 <= prob_range[0] <= 1) or not (0 <= prob_range[1] <= 1):
+            raise ValueError("prob_range values must be between 0 and 1.")
+        if prob_range[0] > prob_range[1]:
+            raise ValueError("prob_range[0] must be <= prob_range[1].")
+
+    np.random.seed(random_seed)
+    unique_labels = np.unique(y)
+    n_classes = len(unique_labels)
+    label_to_idx = {label: idx for idx, label in enumerate(unique_labels)}
+
+    # Helper: build probability distribution for a single sample
+    def build_prob_dist(true_label, flip_prob):
+        # Handle the case where n_classes is 1 (no other classes to distribute flip_prob to)
+        if n_classes - 1 == 0:
+            prob_dist = np.full(n_classes, 0.0) # No other classes, so probability is 0 for non-existent ones
+        else:
+            prob_dist = np.full(n_classes, flip_prob / (n_classes - 1))
+        true_idx = label_to_idx[true_label]
+        prob_dist[true_idx] = 1 - flip_prob
+        return prob_dist
+
+    y_noisy = y.copy()
+    probs_y = np.zeros((len(y), n_classes))
+
+    if mode == "proportion":
+        # Calculate the number of samples to actually flip in y_noisy
+        n_flip = int(noise_level * len(y))
+        # Randomly select the indices of samples whose labels will be flipped in y_noisy
+        indices_to_flip_in_y_noisy = np.random.choice(len(y), size=n_flip, replace=False)
+
+        for idx in range(len(y)):
+            
+            true_label = y[idx]
+
+            # FOR probs_y: Every sample has the *same* intrinsic 'noise_level' chance of switching,
+            # regardless of whether it's actually flipped in y_noisy.
+            # This is the probability distribution reflecting the "game rules" for all labels.
+            probs_y[idx] = build_prob_dist(true_label, noise_level) # <-- ALWAYS use noise_level here for probs_y
+
+            # FOR y_noisy: Only flip the label if this sample's index was chosen
+            if idx in indices_to_flip_in_y_noisy:
+                current_label = y_noisy[idx]
+                # Select a new label that is not the current one
+                # Handle cases where current_label is the only unique_label (shouldn't happen with n_classes > 1 but for robustness)
+                possible_new_labels = [l for l in unique_labels if l != current_label]
+                if possible_new_labels: # Ensure there's a label to switch to
+                    new_label = np.random.choice(possible_new_labels)
+                    y_noisy[idx] = new_label
+                # else: if there's only one class, no flipping is possible.
+
+    elif mode == "random_prob":
+        min_p, max_p = prob_range
+        flip_probs = np.random.uniform(min_p, max_p, size=len(y))
+        for idx, flip_prob in enumerate(flip_probs):
+            true_label = y[idx]
+            probs_y[idx] = build_prob_dist(true_label, flip_prob)
+            if np.random.rand() < flip_prob:
+                current_label = y_noisy[idx]
+                possible_new_labels = [l for l in unique_labels if l != current_label]
+                if possible_new_labels:
+                    new_label = np.random.choice(possible_new_labels)
+                    y_noisy[idx] = new_label
+    else:
+        raise ValueError("mode must be either 'proportion' or 'random_prob'")
+
+    y_test_noisy = None
+    probs_y_test = None
+    if apply_to_test:
+        if y_test is None:
+            raise ValueError("y_test must be provided if apply_to_test=True")
+        y_test_noisy = y_test.copy()
+        probs_y_test = np.zeros((len(y_test), n_classes))
+
+        # Test set logic mirroring the training set
+        if mode == "proportion":
+            n_flip_test = int(noise_level * len(y_test))
+            indices_to_flip_in_y_test_noisy = np.random.choice(len(y_test), size=n_flip_test, replace=False)
+            for idx in range(len(y_test)):
+                true_label = y_test[idx]
+                # FOR probs_y_test: Every sample has the *same* intrinsic 'noise_level' chance of switching
+                probs_y_test[idx] = build_prob_dist(true_label, noise_level) # <-- ALWAYS use noise_level here for probs_y_test
+
+                # FOR y_test_noisy: Only flip the label if this sample's index was chosen
+                if idx in indices_to_flip_in_y_test_noisy:
+                    current_label = y_test_noisy[idx]
+                    possible_new_labels = [l for l in unique_labels if l != current_label]
+                    if possible_new_labels:
+                        new_label = np.random.choice(possible_new_labels)
+                        y_test_noisy[idx] = new_label
+
+        elif mode == "random_prob":
+            min_p, max_p = prob_range
+            flip_probs_test = np.random.uniform(min_p, max_p, size=len(y_test))
+            for idx, flip_prob in enumerate(flip_probs_test):
+                true_label = y_test[idx]
+                probs_y_test[idx] = build_prob_dist(true_label, flip_prob)
+                if np.random.rand() < flip_prob:
+                    current_label = y_test_noisy[idx]
+                    possible_new_labels = [l for l in unique_labels if l != current_label]
+                    if possible_new_labels:
+                        new_label = np.random.choice(possible_new_labels)
+                        y_test_noisy[idx] = new_label
+    
+    return y_noisy, y_test_noisy, probs_y, probs_y_test
