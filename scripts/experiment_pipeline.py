@@ -89,7 +89,7 @@ def run_pipeline(config):
                 )
                 prf_estimators.append(estimator)
             model.set_estimator(prf_estimators)
-            model.fit(X=X_train_noisy, y=y_train)
+            model.fit(X=X_train_noisy, y=y_train, dX=dX)
             y_pred = model.predict(X_test)
             acc = accuracy_score(y_pred, y_test)
             accuracies_PDRF.append(acc)
