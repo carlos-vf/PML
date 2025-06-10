@@ -10,10 +10,13 @@ models:
   pdrf:
     n_cascade_estimators: 4
     n_trees_pdrf: 10
+    max_depth_pdrf: 4
   rf:
     n_estimators: 50
   deep_forest:
     n_estimators: 2
+    n_trees_drf: 20
+
   neural_network:
     epochs: 20
     batch_size: 16
