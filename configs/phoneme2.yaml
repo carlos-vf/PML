@@ -3,17 +3,20 @@ dataset_path: "KEEL/keel_data/phoneme.dat"
 seeds: [17, 42, 123, 27, 2727, 32]
 
 noise_scale: 0.7
+label_noise_scale: 0.0
+noise_type: "gaussian"
 
 models:
   pdrf:
     n_cascade_estimators: 2
+    n_trees_pdrf: 10
   rf:
-    n_estimators: 50
+    n_estimators: 100
   deep_forest:
     n_estimators: 2
   neural_network:
     epochs: 20
-    batch_size: 16
+    batch_size: 64
     hidden_units: 64
     dropout_rate: 0.5
     optimizer: "adam"

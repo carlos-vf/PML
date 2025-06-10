@@ -1,17 +1,18 @@
-dataset_path: "KEEL/keel_data/phoneme.dat"
+dataset_path: "KEEL/keel_data/magic.dat"
 
 seeds: [17, 42, 123, 27, 2727, 32]
 
-noise_scale: 1.1
+noise_scale: 0.3
 label_noise_scale: 0.0
 noise_type: "gaussian"
 
 models:
   pdrf:
-    n_cascade_estimators: 2
+    n_cascade_estimators: 4
     n_trees_pdrf: 10
+
   rf:
-    n_estimators: 100
+    n_estimators: 50
   deep_forest:
     n_estimators: 2
   neural_network:

@@ -19,6 +19,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import random
+import probabilistic_deep_forest as pdf
+from sklearn.metrics import accuracy_score
 
 def set_all_seeds(seed):
     np.random.seed(seed)
@@ -46,7 +48,8 @@ def run_pipeline(config):
     seeds = config.get('seeds', [27, 272, 2727, 1, 30])  # default seeds
     noise_scale = config.get('noise_scale', 0.0)  # default noise 0.0
     label_noise_scale = config.get('label_noise_scale', 0.0)  # default noise 0.0
-
+    noise_type = config.get('noise_type', "gaussian")  # default noise 0.0
+    
     print(f"--- DEBUG: Current noise_scale from config: {noise_scale} ---")
 
     models_config = config.get('models', {})
@@ -58,7 +61,7 @@ def run_pipeline(config):
     )
 
     # Add noise to train set
-    X_train_noisy, _, dX, _ = add_noise(X_train, noise_type='gaussian', gaussian_scale=noise_scale)
+    X_train_noisy, _, dX, _ = add_noise(X_train, noise_type=noise_type, gaussian_scale=noise_scale)
     y_train_noisy, _, pY, _ = add_label_noise(y_train, mode="random_prob", noise_level=label_noise_scale, random_seed=30)
 
     n_classes = len(label_map)
@@ -69,30 +72,25 @@ def run_pipeline(config):
     # --- PDRF ---
     if 'pdrf' in models_config:
         n_cascade_estimators = models_config['pdrf'].get('n_cascade_estimators', 4)
+        n_trees_pdrf = models_config['pdrf'].get('n_trees_pdrf', 10)
         accuracies_PDRF = []
         for seed in seeds:
             set_all_seeds(seed)
-            model = CascadeForestClassifier(n_bins=n_classes, random_state=seed)
+            model = pdf.CascadeForestClassifier(n_bins=n_classes, random_state=seed)
             prf_estimators = []
             for i in range(n_cascade_estimators):
                 estimator = PRF4DF.SklearnCompatiblePRF(
                     n_classes_=n_classes,
                     n_features_=n_features,
-                    use_probabilistic_labels=False,
-                    use_feature_uncertainties=True,
-                    n_estimators=10,
+                    n_estimators=n_trees_pdrf,
                     max_depth=10,
-                    random_state=i,
                     n_jobs=1
                 )
                 prf_estimators.append(estimator)
             model.set_estimator(prf_estimators)
-
-            X_train_combined = np.hstack((X_train_noisy, dX))
-            model.fit(X=X_train_combined, y=y_train)
-
-            X_test_combined = np.hstack((X_test, np.zeros_like(X_test)))
-            acc = model.score(X_test_combined, y_test)
+            model.fit(X=X_train_noisy, y=y_train)
+            y_pred = model.predict(X_test)
+            acc = accuracy_score(y_pred, y_test)
             accuracies_PDRF.append(acc)
         accuracies['PDRF'] = (np.mean(accuracies_PDRF), np.std(accuracies_PDRF))
 
