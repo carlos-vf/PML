@@ -1,0 +1,23 @@
+dataset_path: "KEEL/keel_data/iris.dat"
+
+seeds: [17, 42, 123, 27, 2727, 32]
+
+noise_scale: 1.1
+
+models:
+  pdrf:
+    n_cascade_estimators: 2
+  rf:
+    n_estimators: 50
+  deep_forest:
+    n_estimators: 2
+  neural_network:
+    epochs: 20
+    batch_size: 16
+    hidden_units: 64
+    dropout_rate: 0.5
+    optimizer: "adam"
+  ksvm: {}         # Empty config is valid
+  prf:             # ← Fix this line!
+    n_estimators: 10
+    bootstrap: true
