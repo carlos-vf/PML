@@ -49,7 +49,7 @@ def run_pipeline(config):
     noise_scale = config.get('noise_scale', 0.0)  # default noise 0.0
     label_noise_scale = config.get('label_noise_scale', 0.0)  # default noise 0.0
     noise_type = config.get('noise_type', "gaussian")  # default noise 0.0
-    
+
     print(f"--- DEBUG: Current noise_scale from config: {noise_scale} ---")
 
     models_config = config.get('models', {})
@@ -61,7 +61,7 @@ def run_pipeline(config):
     )
 
     # Add noise to train set
-    X_train_noisy, _, dX, _ = add_noise(X_train, noise_type=noise_type, gaussian_scale=noise_scale)
+    X_train_noisy, _, dX, _ = add_noise(X_train, noise_type=noise_type, noise_scale=noise_scale)
     y_train_noisy, _, pY, _ = add_label_noise(y_train, mode="random_prob", noise_level=label_noise_scale, random_seed=30)
 
     n_classes = len(label_map)
@@ -73,6 +73,7 @@ def run_pipeline(config):
     if 'pdrf' in models_config:
         n_cascade_estimators = models_config['pdrf'].get('n_cascade_estimators', 4)
         n_trees_pdrf = models_config['pdrf'].get('n_trees_pdrf', 10)
+        max_depth_pdrf = models_config['pdrf'].get('max_depth_pdrf', 10)
         accuracies_PDRF = []
         for seed in seeds:
             set_all_seeds(seed)
@@ -83,12 +84,12 @@ def run_pipeline(config):
                     n_classes_=n_classes,
                     n_features_=n_features,
                     n_estimators=n_trees_pdrf,
-                    max_depth=10,
+                    max_depth=max_depth_pdrf,
                     n_jobs=1
                 )
                 prf_estimators.append(estimator)
             model.set_estimator(prf_estimators)
-            model.fit(X=X_train_noisy, y=y_train)
+            model.fit(X=X_train_noisy, y=y_train, dX=dX)
             y_pred = model.predict(X_test)
             acc = accuracy_score(y_pred, y_test)
             accuracies_PDRF.append(acc)
@@ -110,10 +111,12 @@ def run_pipeline(config):
     # --- Deep Forest ---
     if 'deep_forest' in models_config:
         n_estimators = models_config['deep_forest'].get('n_estimators', 2)
+        n_trees_drf = models_config['deep_forest'].get('n_trees_drf', 10)
+
         accuracies_DF = []
         for seed in seeds:
             set_all_seeds(seed)
-            clf = CascadeForestClassifier(n_estimators=n_estimators, random_state=seed)
+            clf = CascadeForestClassifier(n_estimators=n_estimators, random_state=seed, n_trees=n_trees_drf)
             clf.fit(X_train_noisy, y_train)
             y_pred = clf.predict(X_test)
             acc = accuracy_score(y_test, y_pred)
@@ -220,15 +223,23 @@ def run_pipeline(config):
     for model_name, (mean_acc, std_acc) in accuracies.items():
         print(f"{model_name} Accuracy: {mean_acc:.4f} ± {std_acc:.4f}")
 
-    # Base output directories and paths
+        # Base output directories and paths
     if noise_scale < 0.4:
-        noise_level = "1_low_noise"
+        noise_level_prefix = "1" # Changed to just "1"
     elif 0.4 <= noise_scale <= 0.9:
-        noise_level = "2_medium_noise"
+        noise_level_prefix = "2" # Changed to just "2"
     else:
-        noise_level = "3_high_noise"
+        noise_level_prefix = "3" # Changed to just "3"
     
-    output_base = f"results/{noise_level}"
+    # Ensure noise_type is defined and accessible here. 
+    # Assuming 'noise_type' is passed into this function or is a global/closure variable.
+    # For example, if it's passed as an argument: def run_pipeline(config, noise_type): ...
+    
+    # Construct a more descriptive noise string for filenames
+    # This will append the numeric level and the noise_type string (e.g., "1_gaussian" or "2_beta")
+    noise_filename_suffix = f"{noise_level_prefix}_{noise_type}" 
+
+    output_base = f"results/{noise_filename_suffix}" # Use the new suffix here
     os.makedirs(output_base, exist_ok=True)
 
     base_name = os.path.splitext(os.path.basename(dataset_path))[0]
@@ -236,11 +247,13 @@ def run_pipeline(config):
 
     output_dir = os.path.join(output_base, "plots")
     os.makedirs(output_dir, exist_ok=True)
-    output_filename = os.path.join(output_dir, f"{base_name}_{noise_level}.png")
+    # Changed output_filename to include noise_type
+    output_filename = os.path.join(output_dir, f"{base_name}_{noise_filename_suffix}.png") 
 
     csv_dir = os.path.join(output_base, "tables")
     os.makedirs(csv_dir, exist_ok=True)
-    csv_path = os.path.join(csv_dir, f"{base_name}_{noise_level}.csv")
+    # Changed csv_path to include noise_type
+    csv_path = os.path.join(csv_dir, f"{base_name}_{noise_filename_suffix}.csv") 
 
     # Create comparison dataframe
     comparison_df = pd.DataFrame({
@@ -301,9 +314,10 @@ def run_pipeline(config):
     ax.set_xticklabels(ax.get_xticklabels(), fontweight='bold')
 
     # Title and subtitle
+    # Include noise_type in the plot title for clarity
     fig.text(
         0.1, 0.93,
-        f"{title_name} dataset – Noise Level: {noise_scale}",
+        f"{title_name} dataset – Noise Level: {noise_scale} ({noise_type})", # Changed title to include noise_type
         ha='left',
         fontsize=14,
         fontweight='bold'
