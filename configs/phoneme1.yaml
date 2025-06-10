@@ -9,11 +9,14 @@ noise_type: "gaussian"
 models:
   pdrf:
     n_cascade_estimators: 4
-    n_trees_pdrf: 10
+    n_trees_pdrf: 20
+    max_depth_pdrf: 10
   rf:
     n_estimators: 100
   deep_forest:
     n_estimators: 2
+    n_trees_drf: 20
+
   neural_network:
     epochs: 20
     batch_size: 64

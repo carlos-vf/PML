@@ -1,11 +1,10 @@
 import numpy as np
 
 def add_noise(X, noise_type='gaussian',
-              gaussian_scale=0.1,
+              noise_scale=0.1,
               beta_alpha=2.0,
               beta_beta=5.0,
               beta_scale=None,
-              uniform_scale=0.1,
               apply_to_test=False,
               X_test=None,
               random_seed=27):
@@ -15,10 +14,9 @@ def add_noise(X, noise_type='gaussian',
     Parameters:
     - X: np.array shape (n_samples, n_features)
     - noise_type: str, one of ['gaussian', 'beta', 'gaussian_heteroschedastic', 'uniform']
-    - gaussian_scale: float, scale for Gaussian noise mean and std dev (for 'gaussian' only)
+    - noise_scale: float, scale for Gaussian noise mean and std dev (for 'gaussian'and 'uniform' only)
     - beta_alpha, beta_beta: float, Beta distribution parameters (for 'beta' only)
     - beta_scale: float or None, scaling for Beta noise (default 0.2 if None)
-    - uniform_scale: float, scaling for uniform noise range (for 'uniform' only)
     - apply_to_test: bool, whether to apply noise to X_test as well
     - X_test: np.array, test set to apply noise if apply_to_test=True
     - random_seed: int, random seed for reproducibility
@@ -37,12 +35,16 @@ def add_noise(X, noise_type='gaussian',
 
     def generate_noise(n_samples, X_sample):
         if noise_type == 'gaussian':
-            noise_means = np.random.uniform(-gaussian_scale * feature_means,
-                                            gaussian_scale * feature_means,
-                                            size=(n_samples, n_features))
-            noise_vars = (gaussian_scale * feature_stds) ** 2
-            noise_vars = np.tile(noise_vars, (n_samples, 1))
+            # Ensure feature_means and feature_stds are defined and have correct dimensions
+            noise_means = np.random.uniform(-noise_scale * feature_means,
+                                        noise_scale * feature_means,
+                                        size=(n_samples, n_features))
+            
+            # The beta distribution should be properly shaped for broadcasting
+            beta_samples = 1.5 * np.random.beta(0.6, 0.5, size=(n_samples, 1))
+            noise_vars = (noise_scale * feature_stds) ** 2 * beta_samples
             return np.random.normal(loc=noise_means, scale=np.sqrt(noise_vars))
+            
 
         elif noise_type == 'beta':
             _beta_scale = beta_scale if beta_scale is not None else 0.2
@@ -53,12 +55,12 @@ def add_noise(X, noise_type='gaussian',
 
         elif noise_type == 'gaussian_heteroschedastic':
             epsilon = 1e-6
-            local_std = gaussian_scale * (np.abs(X_sample) + epsilon)
+            local_std = noise_scale * (np.abs(X_sample) + epsilon)
             return np.random.normal(loc=0, scale=local_std)
 
         elif noise_type == 'uniform':
-            noise_low = -uniform_scale * feature_stds
-            noise_high = uniform_scale * feature_stds
+            noise_low = -noise_scale * feature_stds
+            noise_high = noise_scale * feature_stds
             noise = np.random.uniform(low=noise_low, high=noise_high, size=(n_samples, n_features))
             return noise
 
