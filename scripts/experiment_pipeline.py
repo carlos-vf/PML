@@ -68,7 +68,7 @@ def run_pipeline(config):
     y_train_noisy, _, py, _ = add_label_noise(y_train, mode="random_prob", noise_level=label_noise_scale, random_seed=30, prob_range=label_noise_range)
 
     # print label noise scale for debugging
-    print(f"--- DEBUG: label_noise_scale: {label_noise_scale} ---")
+    print(f"--- DEBUG: label_noise_range: {label_noise_range} ---")
     # print head of py for debugging
     print(f"--- DEBUG: py head: {py[:10]} ---")
     #print head of y_train for debugging
@@ -90,7 +90,7 @@ def run_pipeline(config):
         accuracies_PDRF = []
         for seed in seeds:
             set_all_seeds(seed)
-            model = pdf.CascadeForestClassifier(n_bins=n_classes, random_state=seed)
+            model = pdf.CascadeForestClassifier(random_state=seed)
             prf_estimators = []
             for i in range(n_cascade_estimators):
                 estimator = PRF4DF.SklearnCompatiblePRF(

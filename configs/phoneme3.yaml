@@ -5,14 +5,15 @@ seeds: [17, 42, 123, 27, 2727, 32]
 noise_scale: 1.1
 label_noise_scale: 0.0
 noise_type: "gaussian"
+label_noise_range: [0.2, 0.5]
 
 models:
   pdrf:
     n_cascade_estimators: 4
     n_trees_pdrf: 20
-    max_depth_pdrf: 10
+    max_depth_pdrf: 8
   rf:
-    n_estimators: 100
+    n_estimators: 200
   deep_forest:
     n_estimators: 2
     n_trees_drf: 20
@@ -25,5 +26,5 @@ models:
     optimizer: "adam"
   ksvm: {}         # Empty config is valid
   prf:             # ← Fix this line!
-    n_estimators: 10
+    n_estimators: 200
     bootstrap: true
