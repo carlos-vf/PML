@@ -121,7 +121,7 @@ def run_pipeline(config):
     else:
         # Load dataset and split
         X_train, X_test, y_train, y_test, label_map = load_keel_dataset(
-            train_path=dataset_path,
+            train_path=config["dataset_path"],
             already_split=False
         )
         # Ensure labels are adjusted to start from 0
