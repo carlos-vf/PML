@@ -1,0 +1,32 @@
+dataset_path: "KEEL/keel_data/wdbc.dat"
+
+seeds: [17, 42, 123, 27, 19]
+
+noise_scale: 0.3
+noise_type: "gaussian"
+label_noise_scale: 0.2
+label_noise_range: [0.0, 0.5]
+
+models:
+  # PDRF: list each if you want to try multiple values
+  pdrf:
+    n_cascade_estimators: [4, 6]
+    n_trees_pdrf: [10, 20, 30]
+    max_depth_pdrf: [4,6,8]
+  # RF: list of n_estimators
+  rf:
+    n_estimators: [20, 50, 100, 200]
+  # Deep Forest: lists
+  deep_forest:
+    n_estimators: [2, 3]
+    n_trees_drf: [10, 20, 30]
+  # neural_network:
+  #   epochs: 20
+  #   batch_size: 16
+  #   hidden_units: 64
+  #   dropout_rate: 0.5
+  #   optimizer: "adam"
+  ksvm: {}         # unchanged
+  # PRF: share n_estimators list with RF; other params can be lists too
+  prf:
+    n_estimators: [20, 50, 100, 200]    # same list as rf.n_estimators

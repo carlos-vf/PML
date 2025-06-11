@@ -6,7 +6,7 @@ set -e
 # Define paths
 # VENV_PATH="venv/bin/activate"
 CONFIG_DIR="configs_grid"
-CONFIGS=("magic1.yaml" "magic2.yaml" "magic3.yaml")
+CONFIGS=("wdbc1.yaml" "wdbc2.yaml" "wdbc3.yaml")
 
 # Check if virtual environment exists
 # if [ ! -f "$VENV_PATH" ]; then
