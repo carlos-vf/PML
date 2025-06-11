@@ -29,9 +29,9 @@ Our solution is to create a deep cascade that is "uncertainty-aware" from end to
 
 - **Automated Experimentation Pipeline**: To rigorously test the PDRF model against standard benchmarks (Random Forest, Deep Forest, Neural Networks, SVMs), we built a comprehensive experimentation pipeline. This pipeline, driven by simple `.yaml` configuration files, automates the entire workflow:
 
-  - Data Loading: Handles various dataset formats (KEEL `.dat`/ MNIST `.idx1-ubyte` and `.idx3-ubyte`)
+  - Data Loading: Handles various dataset formats (KEEL `.dat`/ MNIST `.idx1-ubyte` and `.idx3-ubyte`).
 
-  - Controlled Noise Injection: Includes a dedicated module `(utils/noising.py)` to synthetically add various types of noise (e.g., Gaussian, Unifiorm) to both features and labels, allowing us to test model robustness under different conditions.
+  - Controlled Noise Injection: Includes a dedicated module `(utils/noising.py)` to synthetically add various types of noise (e.g., Gaussian, Unifiorm) to the features, and Random Classification Noise (Angluin and Laird, 1988) to the labels, allowing us to test model robustness under different conditions. 
 
   - Model Configuration and Comparison: Automatically configures, trains, and evaluates all specified models on the same data splits, generating summary tables and plots for easy comparison of performance.
 
@@ -62,6 +62,8 @@ Deep Forest: Zhou, Z.-H., & Feng, J. (2017). Deep Forest: Towards an Alternative
 
 Probabilistic Random Forest: Reis, I., Baron, D., & Shahaf, S. (2018). Probabilistic Random Forest: A machine learning algorithm for noisy datasets. arXiv:1811.05994.
 
+Random Classification Noise: Angluin, D., Laird, P. Learning From Noisy Examples. Machine Learning 2, 343–370 (1988)
+
 
 ## Sources
 
@@ -72,7 +74,10 @@ Probabilistic Random Forest: Reis, I., Baron, D., & Shahaf, S. (2018). Probabili
 - **Deep Forest**:
   - Paper: https://arxiv.org/abs/1702.08835
   - Github: https://github.com/LAMDA-NJU/Deep-Forest
-    
+
+- **Random Classification Noise**:
+  - Paper: https://link.springer.com/article/10.1023/A:1022873112823
+
 - **Datasets**:
   - KEEL dataset repository: https://sci2s.ugr.es/keel/datasets.php
   - MNIST dataset: https://git-disl.github.io/GTDLBench/datasets/mnist_datasets/
