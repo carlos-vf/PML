@@ -383,7 +383,7 @@ def run_pipeline(config):
                             )
                             prf_estimators.append(estimator)
                         model.set_estimator(prf_estimators)
-                        model.fit(X=X_train_noisy, y=y_train_noisy, dX=dX, py=py)
+                        model.fit(X=X_train_noisy, dX=dX, py=py)
                         y_pred = model.predict(X_test)
                         acc = accuracy_score(y_pred, y_test)
                         accuracies_PDRF.append(acc)
@@ -508,7 +508,7 @@ def run_pipeline(config):
             'C': [0.1, 1, 10],
             'gamma': ['scale', 'auto']
         }
-        grid = GridSearchCV(model, param_grid, cv=3, n_jobs=-1)
+        grid = GridSearchCV(model, param_grid, cv=3, n_jobs=1)
         grid.fit(X_train_noisy, y_train_noisy)
         best_svm = grid.best_estimator_
 
