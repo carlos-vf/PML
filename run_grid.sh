@@ -6,7 +6,7 @@ set -e
 # Define paths
 # VENV_PATH="venv/bin/activate"
 CONFIG_DIR="configs_grid"
-CONFIGS=("phoneme1.yaml" "phoneme2.yaml" "phoneme3.yaml" "magic1.yaml" "magic2.yaml" "magic3.yaml")
+CONFIGS=("magic1.yaml" "magic2.yaml" "magic3.yaml")
 
 # Check if virtual environment exists
 # if [ ! -f "$VENV_PATH" ]; then
