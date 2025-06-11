@@ -7,23 +7,27 @@ label_noise_scale: 0.0
 noise_type: "gaussian"
 
 models:
-  pdrf:
+  pdf:
     n_cascade_estimators: 4
-    n_trees_pdrf: 20
-    max_depth_pdrf: 10
-  rf:
-    n_estimators: 100
-  deep_forest:
-    n_estimators: 2
-    n_trees_drf: 20
+    n_trees_pdf: 20
+    bootstrap: true
 
-  neural_network:
+  rf:
+    n_estimators: 20
+
+  df:
+    n_estimators: 2
+    n_trees_df: 20
+
+  prf:
+    n_estimators: 20
+    bootstrap: true
+
+  nn:
     epochs: 20
     batch_size: 64
     hidden_units: 64
     dropout_rate: 0.5
     optimizer: "adam"
-  ksvm: {}         # Empty config is valid
-  prf:             
-    n_estimators: 10
-    bootstrap: true
+
+  ksvm: {}

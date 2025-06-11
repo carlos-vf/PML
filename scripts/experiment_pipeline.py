@@ -149,10 +149,9 @@ def run_pipeline(config):
     accuracies = {}
 
     # --- Probabilistic Deep Forest ---
-    if 'pdrf' in models_config:
-        n_cascade_estimators = models_config['pdrf'].get('n_cascade_estimators', 4)
-        n_trees_pdrf = models_config['pdrf'].get('n_trees_pdrf', 10)
-        max_depth_pdrf = models_config['pdrf'].get('max_depth_pdrf', 10)
+    if 'pdf' in models_config:
+        n_cascade_estimators = models_config['pdf'].get('n_cascade_estimators', 4)
+        n_trees_pdrf = models_config['pdf'].get('n_trees_pdf', 10)
         accuracies_PDRF = []
         for seed in seeds:
             set_all_seeds(seed)
@@ -170,7 +169,7 @@ def run_pipeline(config):
             y_pred = model.predict(X_test)
             acc = accuracy_score(y_pred, y_test)
             accuracies_PDRF.append(acc)
-        accuracies['PDRF'] = (np.mean(accuracies_PDRF), np.std(accuracies_PDRF))
+        accuracies['PDF'] = (np.mean(accuracies_PDRF), np.std(accuracies_PDRF))
 
     # --- Random Forest ---
     if 'rf' in models_config:
@@ -192,14 +191,16 @@ def run_pipeline(config):
         prf_params = models_config['prf']
         n_estimators = prf_params.get('n_estimators', 10)
         bootstrap = prf_params.get('bootstrap', True)
-        max_depth = prf_params.get('max_depth', None)
         max_features = prf_params.get('max_features', 'sqrt')
 
         accuracies_PRF = [] 
 
         for seed in seeds:
             set_all_seeds(seed)
-            prf_cls = PRF.prf(n_estimators=n_estimators, bootstrap=bootstrap, max_depth=max_depth, max_features=max_features)
+            prf_cls = PRF.prf(
+                n_estimators=n_estimators, 
+                bootstrap=bootstrap, 
+                max_features=max_features)
             prf_cls.fit(X=X_train_noisy, dX=dX, py=py)
             score = prf_cls.score(X_test, y=y_test)
             accuracies_PRF.append(score)
@@ -207,9 +208,9 @@ def run_pipeline(config):
         accuracies['PRF'] = (np.mean(accuracies_PRF), np.std(accuracies_PRF))
 
     # --- Deep Forest ---
-    if 'deep_forest' in models_config:
-        n_estimators = models_config['deep_forest'].get('n_estimators', 2)
-        n_trees_drf = models_config['deep_forest'].get('n_trees_drf', 10)
+    if 'df' in models_config:
+        n_estimators = models_config['df'].get('n_estimators', 2)
+        n_trees_drf = models_config['df'].get('n_trees_df', 10)
 
         accuracies_DF = []
         for seed in seeds:
@@ -225,8 +226,8 @@ def run_pipeline(config):
         accuracies['DF'] = (np.mean(accuracies_DF), np.std(accuracies_DF))
 
     # --- Neural Network ---
-    if 'neural_network' in models_config:
-        nn_params = models_config['neural_network']
+    if 'nn' in models_config:
+        nn_params = models_config['nn']
         epochs = nn_params.get('epochs', 20)
         batch_size = nn_params.get('batch_size', 16)
         hidden_units = nn_params.get('hidden_units', 64)
