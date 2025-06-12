@@ -35,16 +35,21 @@ def add_noise(X, noise_type='gaussian',
 
     def generate_noise(n_samples, X_sample):
         if noise_type == 'gaussian':
-            # Ensure feature_means and feature_stds are defined and have correct dimensions
-            noise_means = np.random.uniform(-noise_scale * feature_means,
-                                        noise_scale * feature_means,
-                                        size=(n_samples, n_features))
-            
-            # The beta distribution should be properly shaped for broadcasting
-            beta_samples = 1.5 * np.random.beta(0.6, 0.5, size=(n_samples, 1))
-            noise_vars = (noise_scale * feature_stds) ** 2 * beta_samples
-            return np.random.normal(loc=noise_means, scale=np.sqrt(noise_vars))
-            
+            # 1. Sample per-feature Beta coefficients and normalize to mean 1
+            beta_per_feature = np.random.beta(1.1, 1, size=n_features)
+            beta_per_feature /= beta_per_feature.mean()  # Normalize to mean=1, so it's coherent with the noise_scale parameter
+
+            # 2. Expand to shape (n_samples, n_features)
+            coeffs = np.tile(beta_per_feature, (n_samples, 1))  # Shape: (n_samples, n_features)
+
+            # 3. Compute per-element noise variance
+            noise_vars = noise_scale * (feature_stds ** 2)[np.newaxis, :] * coeffs
+
+            # 4. Sample noise with zero mean and computed std
+            noise = np.random.normal(loc=0.0, scale=np.sqrt(noise_vars))
+
+            return noise
+
 
         elif noise_type == 'beta':
             _beta_scale = beta_scale if beta_scale is not None else 0.2
