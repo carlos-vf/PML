@@ -1,0 +1,6 @@
+Model,hyperparams,mean_accuracy,std_accuracy
+RF,n_estimators=50,0.8929824561403509,0.018731716231633874
+PRF,"n_estimators=20, bootstrap=True, max_depth=None, max_features=sqrt",0.9421052631578947,0.007017543859649094
+DeepForest,"n_estimators=2, n_trees=30",0.9035087719298245,0.0055478555441550335
+PDRF,"n_cascade_estimators=4, n_trees_pdrf=10, max_depth_pdrf=6",0.9210526315789472,0.00960916767552922
+KSVM,"{'C': 1, 'gamma': 'scale', 'kernel': 'linear'}",0.8859649122807017,0.0

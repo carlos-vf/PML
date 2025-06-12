@@ -82,12 +82,12 @@ def run_pipeline(config):
 
     accuracies = {}
 
-    # --- PDRF ---
-    if 'pdrf' in models_config:
-        n_cascade_estimators = models_config['pdrf'].get('n_cascade_estimators', 4)
-        n_trees_pdrf = models_config['pdrf'].get('n_trees_pdrf', 10)
-        max_depth_pdrf = models_config['pdrf'].get('max_depth_pdrf', 10)
-        accuracies_PDRF = []
+    # --- PDF ---
+    if 'pdf' in models_config:
+        n_cascade_estimators = models_config['pdf'].get('n_cascade_estimators', 4)
+        n_trees_pdf = models_config['pdf'].get('n_trees_pdf', 10)
+        max_depth_pdf = models_config['pdf'].get('max_depth_pdf', 10)
+        accuracies_pdf = []
         for seed in seeds:
             set_all_seeds(seed)
             model = pdf.CascadeForestClassifier(random_state=seed)
@@ -96,8 +96,8 @@ def run_pipeline(config):
                 estimator = PRF4DF.SklearnCompatiblePRF(
                     n_classes_=n_classes,
                     n_features_=n_features,
-                    n_estimators=n_trees_pdrf,
-                    max_depth=max_depth_pdrf,
+                    n_estimators=n_trees_pdf,
+                    max_depth=max_depth_pdf,
                     n_jobs=1
                 )
                 prf_estimators.append(estimator)
@@ -105,8 +105,8 @@ def run_pipeline(config):
             model.fit(X=X_train_noisy, y=y_train_noisy, dX=dX, py=py)
             y_pred = model.predict(X_test)
             acc = accuracy_score(y_pred, y_test)
-            accuracies_PDRF.append(acc)
-        accuracies['PDRF'] = (np.mean(accuracies_PDRF), np.std(accuracies_PDRF))
+            accuracies_pdf.append(acc)
+        accuracies['PDF'] = (np.mean(accuracies_pdf), np.std(accuracies_pdf))
 
     # --- Random Forest ---
     if 'rf' in models_config:
@@ -122,14 +122,14 @@ def run_pipeline(config):
         accuracies['RF'] = (np.mean(accuracies_RF), np.std(accuracies_RF))
 
     # --- Deep Forest ---
-    if 'deep_forest' in models_config:
-        n_estimators = models_config['deep_forest'].get('n_estimators', 2)
-        n_trees_drf = models_config['deep_forest'].get('n_trees_drf', 10)
+    if 'df' in models_config:
+        n_estimators = models_config['df'].get('n_estimators', 2)
+        n_trees_df = models_config['df'].get('n_trees_df', 10)
 
         accuracies_DF = []
         for seed in seeds:
             set_all_seeds(seed)
-            clf = CascadeForestClassifier(n_estimators=n_estimators, random_state=seed, n_trees=n_trees_drf)
+            clf = CascadeForestClassifier(n_estimators=n_estimators, random_state=seed, n_trees=n_trees_df)
             clf.fit(X_train_noisy, y_train_noisy)
             y_pred = clf.predict(X_test)
             acc = accuracy_score(y_test, y_pred)
@@ -137,7 +137,7 @@ def run_pipeline(config):
         accuracies['DF'] = (np.mean(accuracies_DF), np.std(accuracies_DF))
 
     # --- Neural Network ---
-    if 'neural_network' in models_config:
+    if 'nn' in models_config:
         nn_params = models_config['neural_network']
         epochs = nn_params.get('epochs', 20)
         batch_size = nn_params.get('batch_size', 16)
@@ -230,7 +230,7 @@ def run_pipeline(config):
 
         accuracies['PRF'] = (np.mean(accuracies_PRF), np.std(accuracies_PRF))
 
-        # Base output directories and paths
+    # Base output directories and paths
     if noise_scale < 0.4:
         noise_level_prefix = "1" # Changed to just "1"
     elif 0.4 <= noise_scale <= 0.9:
@@ -272,8 +272,8 @@ def run_pipeline(config):
     # Sort by mean accuracy descending
     comparison_df = comparison_df.sort_values("Mean Accuracy", ascending=False).reset_index(drop=True)
 
-    # Color highlight for PDRF
-    colors = comparison_df["Model"].apply(lambda x: "#55bfc7" if x == "PDRF" else "lightgray")
+    # Color highlight for PDF
+    colors = comparison_df["Model"].apply(lambda x: "#55bfc7" if x == "PDF" else "lightgray")
 
     # Create the plot
     fig, ax = plt.subplots(figsize=(9, 6))
@@ -321,10 +321,9 @@ def run_pipeline(config):
     ax.set_xticklabels(ax.get_xticklabels(), fontweight='bold')
 
     # Title and subtitle
-    # Include noise_type in the plot title for clarity
     fig.text(
         0.1, 0.93,
-        f"{title_name} dataset – Noise Levels: {noise_scale} ({noise_type}), {label_noise_range}", # Changed title to include noise_type
+        f"{title_name} dataset – Noise Levels: {noise_scale} ({noise_type}), {label_noise_range}",
         ha='left',
         fontsize=14,
         fontweight='bold'
