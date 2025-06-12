@@ -52,7 +52,10 @@ chmod +x run.sh
 ./run.sh mnist1.yaml mnist2.yaml mnist3.yaml
 ```
 
-The results, including tables and plots, will be saved in the results/ directory.
+The results, including tables and plots, will be saved in the `results/` directory.
+
+> [!TIP]
+> The file `example_notebook.ipynb` contains a simple example of the whole project!
 
 > [!NOTE]  
 > This project was developed using Python 3.7.9
