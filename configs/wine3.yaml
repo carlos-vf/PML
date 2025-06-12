@@ -1,0 +1,35 @@
+name: "wine-quiality-red"
+dataset_path: "KEEL/keel_data/winequality-red.dat"
+
+seeds: [17, 42, 123, 27, 2727, 32]
+
+noise_scale: 1.5
+noise_type: "gaussian"
+label_noise_scale: 0.2
+label_noise_range: [0.0, 0.5]
+
+models:
+  pdf:
+    n_cascade_estimators: 4
+    n_trees_pdf: 20
+    bootstrap: true
+
+  rf:
+    n_estimators: 20
+
+  df:
+    n_estimators: 2
+    n_trees_df: 20
+
+  prf:
+    n_estimators: 20
+    bootstrap: true
+
+  nn:
+    epochs: 20
+    batch_size: 64
+    hidden_units: 64
+    dropout_rate: 0.5
+    optimizer: "adam"
+
+  ksvm: {}

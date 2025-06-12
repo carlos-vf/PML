@@ -1,26 +1,72 @@
-import numpy as np
 import os
-from utils import load_keel_dataset
-from utils.noising import add_noise
-from utils.noising import add_label_noise
+
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+import random
+import struct
+from array import array
+
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
-from deepforest import CascadeForestClassifier
-import PRF
-import PRF4DF
+from sklearn.model_selection import GridSearchCV
+
 import tensorflow as tf
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout
 from scikeras.wrappers import KerasClassifier
-from sklearn.model_selection import GridSearchCV
-import matplotlib.pyplot as plt
-import pandas as pd
-import seaborn as sns
-import random
+
+from deepforest import CascadeForestClassifier
 import probabilistic_deep_forest as pdf
-from sklearn.metrics import accuracy_score
+import PRF
+import PRF4DF
+
+from utils import load_keel_dataset
+from utils.noising import add_noise
+from utils.noising import add_label_noise
+
+
+
+class MnistDataloader(object):
+    def __init__(self, training_images_filepath,training_labels_filepath,
+                 test_images_filepath, test_labels_filepath):
+        self.training_images_filepath = training_images_filepath
+        self.training_labels_filepath = training_labels_filepath
+        self.test_images_filepath = test_images_filepath
+        self.test_labels_filepath = test_labels_filepath
+    
+    def read_images_labels(self, images_filepath, labels_filepath):        
+        labels = []
+        with open(labels_filepath, 'rb') as file:
+            magic, size = struct.unpack(">II", file.read(8))
+            if magic != 2049:
+                raise ValueError('Magic number mismatch, expected 2049, got {}'.format(magic))
+            labels = array("B", file.read())        
+        
+        with open(images_filepath, 'rb') as file:
+            magic, size, rows, cols = struct.unpack(">IIII", file.read(16))
+            if magic != 2051:
+                raise ValueError('Magic number mismatch, expected 2051, got {}'.format(magic))
+            image_data = array("B", file.read())        
+        images = []
+        for i in range(size):
+            images.append([0] * rows * cols)
+        for i in range(size):
+            img = np.array(image_data[i * rows * cols:(i + 1) * rows * cols])
+            img = img.reshape(28, 28)
+            images[i][:] = img            
+        
+        return images, labels
+            
+    def load_data(self):
+        x_train, y_train = self.read_images_labels(self.training_images_filepath, self.training_labels_filepath)
+        x_test, y_test = self.read_images_labels(self.test_images_filepath, self.test_labels_filepath)
+        return (x_train, y_train),(x_test, y_test)        
+    
+
 
 def set_all_seeds(seed):
     np.random.seed(seed)
@@ -43,46 +89,66 @@ def create_nn_model(input_dim, num_classes, is_binary, hidden_units, dropout_rat
 
 
 def run_pipeline(config):
-    # Load dataset
+
+    if config["name"] == "mnist":
+
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        training_images_filepath = os.path.join(base_dir, "..", "data", "MNIST", "train-images.idx3-ubyte")
+        training_labels_filepath = os.path.join(base_dir, "..", "data", "MNIST", "train-labels.idx1-ubyte")
+        test_images_filepath = os.path.join(base_dir, "..", "data", "MNIST", "t10k-images.idx3-ubyte")
+        test_labels_filepath = os.path.join(base_dir, "..", "data", "MNIST", "t10k-labels.idx1-ubyte")
+        mnist_dataloader = MnistDataloader(training_images_filepath, training_labels_filepath, test_images_filepath, test_labels_filepath)
+        (X_train_raw, y_train_raw), (X_test_raw, y_test_raw) = mnist_dataloader.load_data()
+
+        # Convert to numpy arrays for easier manipulation
+        X_train_raw = np.array(X_train_raw[:80])
+        y_train = np.array(y_train_raw[:80])
+        X_test_raw = np.array(X_test_raw[:20])
+        y_test = np.array(y_test_raw[:20])
+
+        # Reshape the 28x28 images into 1D vectors of 784 features
+        n_train_samples = X_train_raw.shape[0]
+        n_test_samples = X_test_raw.shape[0]
+        n_features = X_train_raw.shape[1] * X_train_raw.shape[2] # 28 * 28 = 784
+        X_train = X_train_raw.reshape(n_train_samples, n_features)
+        X_test = X_test_raw.reshape(n_test_samples, n_features)
+
+        # Normalize pixel values to be between 0 and 1
+        X_train = X_train / 255.0
+        X_test = X_test / 255.0
+
+
+    else:
+        # Load dataset and split
+        X_train, X_test, y_train, y_test, label_map = load_keel_dataset(
+            train_path=config["dataset_path"],
+            already_split=False
+        )
+        # Ensure labels are adjusted to start from 0
+        y_train = y_train - 1  
+        y_test = y_test - 1  
+
+
     dataset_path = config['dataset_path']
     seeds = config.get('seeds', [27, 272, 2727, 1, 30])  # default seeds
+
     noise_scale = config.get('noise_scale', 0.0)  # default noise 0.0
     label_noise_scale = config.get('label_noise_scale', 0.0)  # default noise 0.0
     label_noise_range = config.get('label_noise_range', (0.0, 0.5))  # default range
     noise_type = config.get('noise_type', "gaussian")  # default noise 0.0
 
-    print(f"--- DEBUG: Current noise_scale from config: {noise_scale} ---")
-
     models_config = config.get('models', {})
 
-    # Load dataset and split
-    X_train, X_test, y_train, y_test, label_map = load_keel_dataset(
-        train_path=dataset_path,
-        already_split=False
-    )
-    # Ensure labels are adjusted to start from 0
-    y_train = y_train - 1  
-    y_test = y_test - 1  
     # Add noise to train set
     X_train_noisy, _, dX, _ = add_noise(X_train, noise_type=noise_type, noise_scale=noise_scale)
     y_train_noisy, _, py, _ = add_label_noise(y_train, mode="random_prob", noise_level=label_noise_scale, random_seed=30, prob_range=label_noise_range)
-
-    # print label noise scale for debugging
-    print(f"--- DEBUG: label_noise_range: {label_noise_range} ---")
-    # print head of py for debugging
-    print(f"--- DEBUG: py head: {py[:10]} ---")
-    #print head of y_train for debugging
-    print(f"--- DEBUG: y_train head: {y_train[:10]} ---")
-    # print head of y_train_noisy for debugging
-    print(f"--- DEBUG: y_train_noisy head: {y_train_noisy[:10]} ---")
-
-
-    n_classes = len(label_map)
+    
     n_features = X_train.shape[1]
+    n_classes = len(np.unique(y_train))
 
     accuracies = {}
 
-    # --- PDF ---
+    # --- Probabilistic Deep Forest ---
     if 'pdf' in models_config:
         n_cascade_estimators = models_config['pdf'].get('n_cascade_estimators', 4)
         n_trees_pdf = models_config['pdf'].get('n_trees_pdf', 10)
@@ -108,37 +174,68 @@ def run_pipeline(config):
             accuracies_pdf.append(acc)
         accuracies['PDF'] = (np.mean(accuracies_pdf), np.std(accuracies_pdf))
 
+
     # --- Random Forest ---
     if 'rf' in models_config:
         n_estimators = models_config['rf'].get('n_estimators', 50)
         accuracies_RF = []
         for seed in seeds:
             set_all_seeds(seed)
-            rf = RandomForestClassifier(n_estimators=n_estimators, random_state=seed)
+            rf = RandomForestClassifier(
+                n_estimators=n_estimators, 
+                random_state=seed)
             rf.fit(X_train_noisy, y_train_noisy)
             y_pred = rf.predict(X_test)
             acc = accuracy_score(y_test, y_pred)
             accuracies_RF.append(acc)
         accuracies['RF'] = (np.mean(accuracies_RF), np.std(accuracies_RF))
 
+        
+    # --- Pobabilistic Random Forest ---
+    if 'prf' in models_config:
+        prf_params = models_config['prf']
+        n_estimators = prf_params.get('n_estimators', 10)
+        bootstrap = prf_params.get('bootstrap', True)
+        max_features = prf_params.get('max_features', 'sqrt')
+        max_depth = prf_params.get('max_depth', None)
+        
+        accuracies_PRF = [] 
+
+        for seed in seeds:
+            set_all_seeds(seed)
+            prf_cls = PRF.prf(
+                n_estimators=n_estimators, 
+                bootstrap=bootstrap, 
+                max_features=max_features,
+                max_depth=max_depth)
+            prf_cls.fit(X=X_train_noisy, dX=dX, py=py)
+            score = prf_cls.score(X_test, y=y_test)
+            accuracies_PRF.append(score)
+
+        accuracies['PRF'] = (np.mean(accuracies_PRF), np.std(accuracies_PRF))
+
+        
     # --- Deep Forest ---
     if 'df' in models_config:
         n_estimators = models_config['df'].get('n_estimators', 2)
         n_trees_df = models_config['df'].get('n_trees_df', 10)
-
         accuracies_DF = []
         for seed in seeds:
             set_all_seeds(seed)
-            clf = CascadeForestClassifier(n_estimators=n_estimators, random_state=seed, n_trees=n_trees_df)
+            clf = CascadeForestClassifier(
+                n_estimators=n_estimators, 
+                random_state=seed, 
+                n_trees=n_trees_df)
             clf.fit(X_train_noisy, y_train_noisy)
             y_pred = clf.predict(X_test)
             acc = accuracy_score(y_test, y_pred)
             accuracies_DF.append(acc)
         accuracies['DF'] = (np.mean(accuracies_DF), np.std(accuracies_DF))
 
+        
     # --- Neural Network ---
     if 'nn' in models_config:
-        nn_params = models_config['neural_network']
+        nn_params = models_config['nn']
         epochs = nn_params.get('epochs', 20)
         batch_size = nn_params.get('batch_size', 16)
         hidden_units = nn_params.get('hidden_units', 64)
@@ -188,10 +285,10 @@ def run_pipeline(config):
 
         accuracies['NN'] = (np.mean(accuracies_NN), np.std(accuracies_NN))
 
+        
     # --- Kernel SVM ---
-
     if 'ksvm' in models_config:
-        set_all_seeds(seeds[0])  # reproducibility for grid search
+        set_all_seeds(seeds[0])
 
         model = SVC()
         param_grid = {
@@ -199,7 +296,7 @@ def run_pipeline(config):
             'C': [0.1, 1, 10],
             'gamma': ['scale', 'auto']
         }
-        grid = GridSearchCV(model, param_grid, cv=3, n_jobs=-1)
+        grid = GridSearchCV(model, param_grid, cv=3, n_jobs=1)
         grid.fit(X_train_noisy, y_train_noisy)
         best_svm = grid.best_estimator_
 
@@ -209,44 +306,20 @@ def run_pipeline(config):
         # Repeat to keep consistent length
         accuracies_KSVM = [acc] * len(seeds)
         accuracies['KSVM'] = (np.mean(accuracies_KSVM), np.std(accuracies_KSVM))
-
-
-    # --- PRF Model ---
-    if 'prf' in models_config:
-        prf_params = models_config['prf']
-        n_estimators = prf_params.get('n_estimators', 10)
-        bootstrap = prf_params.get('bootstrap', True)
-        max_depth = prf_params.get('max_depth', None)
-        max_features = prf_params.get('max_features', 'sqrt')
-
-        accuracies_PRF = [] 
-
-        for seed in seeds:
-            set_all_seeds(seed)
-            prf_cls = PRF.prf(n_estimators=n_estimators, bootstrap=bootstrap, max_depth=max_depth, max_features=max_features)
-            prf_cls.fit(X=X_train_noisy, dX=dX, py=py)
-            score = prf_cls.score(X_test, y=y_test)
-            accuracies_PRF.append(score)
-
-        accuracies['PRF'] = (np.mean(accuracies_PRF), np.std(accuracies_PRF))
-
+        
+        
     # Base output directories and paths
     if noise_scale < 0.4:
-        noise_level_prefix = "1" # Changed to just "1"
+        noise_level_prefix = "1"
     elif 0.4 <= noise_scale <= 0.9:
-        noise_level_prefix = "2" # Changed to just "2"
+        noise_level_prefix = "2"
     else:
-        noise_level_prefix = "3" # Changed to just "3"
-    
-    # Ensure noise_type is defined and accessible here. 
-    # Assuming 'noise_type' is passed into this function or is a global/closure variable.
-    # For example, if it's passed as an argument: def run_pipeline(config, noise_type): ...
+        noise_level_prefix = "3"
     
     # Construct a more descriptive noise string for filenames
-    # This will append the numeric level and the noise_type string (e.g., "1_gaussian" or "2_beta")
     noise_filename_suffix = f"{noise_level_prefix}_{noise_type}" 
 
-    output_base = f"results/{noise_filename_suffix}" # Use the new suffix here
+    output_base = f"results/{noise_filename_suffix}"
     os.makedirs(output_base, exist_ok=True)
 
     base_name = os.path.splitext(os.path.basename(dataset_path))[0]
@@ -254,11 +327,13 @@ def run_pipeline(config):
 
     output_dir = os.path.join(output_base, "plots")
     os.makedirs(output_dir, exist_ok=True)
+
     # Changed output_filename to include noise_type
     output_filename = os.path.join(output_dir, f"{base_name}_{noise_filename_suffix}_({label_noise_range[0]},{label_noise_range[1]}).png") 
 
     csv_dir = os.path.join(output_base, "tables")
     os.makedirs(csv_dir, exist_ok=True)
+
     # Changed csv_path to include noise_type
     csv_path = os.path.join(csv_dir, f"{base_name}_{noise_filename_suffix}_({label_noise_range[0]},{label_noise_range[1]}).csv") 
 
