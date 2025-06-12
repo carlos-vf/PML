@@ -188,7 +188,7 @@ def run_pipeline(config):
             accuracies_RF = []
             for seed in seeds:
                 set_all_seeds(seed)
-                rf = RandomForestClassifier(n_estimators=n_estimators, random_state=seed)
+                rf = RandomForestClassifier(n_estimators=n_estimators, random_state=seed, n_jobs=-1)
                 rf.fit(X_train_noisy, y_train_noisy)
                 y_pred = rf.predict(X_test)
                 acc = accuracy_score(y_test, y_pred)
@@ -356,7 +356,7 @@ def run_pipeline(config):
                 accuracies_DF = []
                 for seed in seeds:
                     set_all_seeds(seed)
-                    clf = CascadeForestClassifier(n_estimators=n_estimators_df, random_state=seed, n_trees=n_trees_df)
+                    clf = CascadeForestClassifier(n_estimators=n_estimators_df, random_state=seed, n_trees=n_trees_df, n_jobs=-1)
                     clf.fit(X_train_noisy, y_train_noisy)
                     y_pred = clf.predict(X_test)
                     acc = accuracy_score(y_test, y_pred)
@@ -369,7 +369,7 @@ def run_pipeline(config):
                     'mean_accuracy': mean_acc,
                     'std_accuracy': std_acc
                 })
-                print(f"DeepForest n_estimators={n_estimators_df}, n_trees={n_trees_df}: {mean_acc:.4f} ± {std_acc:.4f}")
+                print(f"DF n_estimators={n_estimators_df}, n_trees={n_trees_df}: {mean_acc:.4f} ± {std_acc:.4f}")
 
         df_df = pd.DataFrame(records)
         csv_path = os.path.join(tables_dir,
@@ -387,14 +387,14 @@ def run_pipeline(config):
         ax.errorbar(x_positions, df_df['mean_accuracy'].values,
                     yerr=df_df['std_accuracy'].values, fmt='none',
                     ecolor='black', elinewidth=1.5, capsize=5)
-        ax.set_xlabel("DeepForest config")
+        ax.set_xlabel("DF config")
         ax.set_ylabel("Mean Accuracy")
         ax.set_ylim(0,1.05)
         plt.xticks(rotation=45, ha='right')
         sns.despine()
         for x, (m,s) in enumerate(zip(df_df['mean_accuracy'], df_df['std_accuracy'])):
             ax.text(x, m + s + 0.02, f'{m:.2f}±{s:.2f}', ha='center', va='bottom', fontsize=8)
-        fig.suptitle(f"DeepForest grid on {title_name}, noise {noise_scale} ({noise_type})", y=1.02)
+        fig.suptitle(f"DF grid on {title_name}, noise {noise_scale} ({noise_type})", y=1.02)
         plt.tight_layout()
         plot_path = os.path.join(plots_dir,
                                  f"{base_name}_{noise_filename_suffix}_deep_forest_grid_({label_noise_range[0]},{label_noise_range[1]}).png")
@@ -405,7 +405,7 @@ def run_pipeline(config):
         # Determine best
         best_row = df_df.loc[df_df['mean_accuracy'].idxmax()]
         best_configs.append({
-            'Model': 'DeepForest',
+            'Model': 'DF',
             'hyperparams': f"n_estimators={int(best_row['n_estimators'])}, n_trees={int(best_row['n_trees_df'])}",
             'mean_accuracy': best_row['mean_accuracy'],
             'std_accuracy': best_row['std_accuracy']
