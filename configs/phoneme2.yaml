@@ -5,6 +5,7 @@ seeds: [17, 42, 123, 27, 2727, 32]
 noise_scale: 0.7
 label_noise_scale: 0.0
 noise_type: "gaussian"
+label_noise_range: [0.2, 0.5]
 
 models:
   pdf:

@@ -142,7 +142,7 @@ def run_pipeline(config):
     # Add noise to train set
     X_train_noisy, _, dX, _ = add_noise(X_train, noise_type=noise_type, noise_scale=noise_scale)
     y_train_noisy, _, py, _ = add_label_noise(y_train, mode="random_prob", noise_level=label_noise_scale, random_seed=30, prob_range=label_noise_range)
-
+    
     n_features = X_train.shape[1]
     n_classes = len(np.unique(y_train))
 
@@ -151,8 +151,9 @@ def run_pipeline(config):
     # --- Probabilistic Deep Forest ---
     if 'pdf' in models_config:
         n_cascade_estimators = models_config['pdf'].get('n_cascade_estimators', 4)
-        n_trees_pdrf = models_config['pdf'].get('n_trees_pdf', 10)
-        accuracies_PDRF = []
+        n_trees_pdf = models_config['pdf'].get('n_trees_pdf', 10)
+        max_depth_pdf = models_config['pdf'].get('max_depth_pdf', 10)
+        accuracies_pdf = []
         for seed in seeds:
             set_all_seeds(seed)
             model = pdf.CascadeForestClassifier(random_state=seed)
@@ -161,15 +162,18 @@ def run_pipeline(config):
                 estimator = PRF4DF.SklearnCompatiblePRF(
                     n_classes_=n_classes,
                     n_features_=n_features,
-                    n_estimators=n_trees_pdrf,
+                    n_estimators=n_trees_pdf,
+                    max_depth=max_depth_pdf,
+                    n_jobs=1
                 )
                 prf_estimators.append(estimator)
             model.set_estimator(prf_estimators)
             model.fit(X=X_train_noisy, y=y_train_noisy, dX=dX, py=py)
             y_pred = model.predict(X_test)
             acc = accuracy_score(y_pred, y_test)
-            accuracies_PDRF.append(acc)
-        accuracies['PDF'] = (np.mean(accuracies_PDRF), np.std(accuracies_PDRF))
+            accuracies_pdf.append(acc)
+        accuracies['PDF'] = (np.mean(accuracies_pdf), np.std(accuracies_pdf))
+
 
     # --- Random Forest ---
     if 'rf' in models_config:
@@ -186,13 +190,15 @@ def run_pipeline(config):
             accuracies_RF.append(acc)
         accuracies['RF'] = (np.mean(accuracies_RF), np.std(accuracies_RF))
 
+        
     # --- Pobabilistic Random Forest ---
     if 'prf' in models_config:
         prf_params = models_config['prf']
         n_estimators = prf_params.get('n_estimators', 10)
         bootstrap = prf_params.get('bootstrap', True)
         max_features = prf_params.get('max_features', 'sqrt')
-
+        max_depth = prf_params.get('max_depth', None)
+        
         accuracies_PRF = [] 
 
         for seed in seeds:
@@ -200,31 +206,33 @@ def run_pipeline(config):
             prf_cls = PRF.prf(
                 n_estimators=n_estimators, 
                 bootstrap=bootstrap, 
-                max_features=max_features)
+                max_features=max_features,
+                max_depth=max_depth)
             prf_cls.fit(X=X_train_noisy, dX=dX, py=py)
             score = prf_cls.score(X_test, y=y_test)
             accuracies_PRF.append(score)
 
         accuracies['PRF'] = (np.mean(accuracies_PRF), np.std(accuracies_PRF))
 
+        
     # --- Deep Forest ---
     if 'df' in models_config:
         n_estimators = models_config['df'].get('n_estimators', 2)
-        n_trees_drf = models_config['df'].get('n_trees_df', 10)
-
+        n_trees_df = models_config['df'].get('n_trees_df', 10)
         accuracies_DF = []
         for seed in seeds:
             set_all_seeds(seed)
             clf = CascadeForestClassifier(
                 n_estimators=n_estimators, 
                 random_state=seed, 
-                n_trees=n_trees_drf)
+                n_trees=n_trees_df)
             clf.fit(X_train_noisy, y_train_noisy)
             y_pred = clf.predict(X_test)
             acc = accuracy_score(y_test, y_pred)
             accuracies_DF.append(acc)
         accuracies['DF'] = (np.mean(accuracies_DF), np.std(accuracies_DF))
 
+        
     # --- Neural Network ---
     if 'nn' in models_config:
         nn_params = models_config['nn']
@@ -277,6 +285,7 @@ def run_pipeline(config):
 
         accuracies['NN'] = (np.mean(accuracies_NN), np.std(accuracies_NN))
 
+        
     # --- Kernel SVM ---
     if 'ksvm' in models_config:
         set_all_seeds(seeds[0])
@@ -297,9 +306,8 @@ def run_pipeline(config):
         # Repeat to keep consistent length
         accuracies_KSVM = [acc] * len(seeds)
         accuracies['KSVM'] = (np.mean(accuracies_KSVM), np.std(accuracies_KSVM))
-
-
-
+        
+        
     # Base output directories and paths
     if noise_scale < 0.4:
         noise_level_prefix = "1"
@@ -311,7 +319,7 @@ def run_pipeline(config):
     # Construct a more descriptive noise string for filenames
     noise_filename_suffix = f"{noise_level_prefix}_{noise_type}" 
 
-    output_base = f"results/{noise_filename_suffix}" # Use the new suffix here
+    output_base = f"results/{noise_filename_suffix}"
     os.makedirs(output_base, exist_ok=True)
 
     base_name = os.path.splitext(os.path.basename(dataset_path))[0]
@@ -339,8 +347,8 @@ def run_pipeline(config):
     # Sort by mean accuracy descending
     comparison_df = comparison_df.sort_values("Mean Accuracy", ascending=False).reset_index(drop=True)
 
-    # Color highlight for PDRF
-    colors = comparison_df["Model"].apply(lambda x: "#55bfc7" if x == "PDRF" else "lightgray")
+    # Color highlight for PDF
+    colors = comparison_df["Model"].apply(lambda x: "#55bfc7" if x == "PDF" else "lightgray")
 
     # Create the plot
     fig, ax = plt.subplots(figsize=(9, 6))
@@ -390,7 +398,7 @@ def run_pipeline(config):
     # Title and subtitle
     fig.text(
         0.1, 0.93,
-        f"{title_name} dataset – Noise Levels: {noise_scale} ({noise_type}), {label_noise_range}", # Changed title to include noise_type
+        f"{title_name} dataset – Noise Levels: {noise_scale} ({noise_type}), {label_noise_range}",
         ha='left',
         fontsize=14,
         fontweight='bold'

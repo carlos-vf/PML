@@ -1,10 +1,11 @@
 dataset_path: "KEEL/keel_data/magic.dat"
 
-seeds: [17, 42, 123, 27, 2727, 32]
+seeds: [17, 42, 123, 27, 2727]
 
 noise_scale: 0.7
 label_noise_scale: 0.0
 noise_type: "gaussian"
+label_noise_range: [0.0, 0.0]
 
 models:
   pdf:
