@@ -1,3 +1,4 @@
+name: "iris"
 dataset_path: "KEEL/keel_data/iris.dat"
 
 seeds: [17, 42, 123, 27, 19]

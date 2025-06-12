@@ -1,5 +1,5 @@
-name: "phoneme"
-dataset_path: "KEEL/keel_data/phoneme.dat"
+name: "mnist"
+dataset_path: "data/MNIST/"
 
 seeds: [17, 42, 123, 27, 19]
 
@@ -32,6 +32,3 @@ models:
   #   optimizer: "adam"
 
   ksvm: {}
-
-
-

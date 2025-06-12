@@ -7,15 +7,9 @@ $ErrorActionPreference = "Stop"
 
 $ConfigDir = "configs_grid"
 $Configs = @(
-    "wdbc1.yaml", 
-    "wdbc2.yaml", 
-    "wdbc3.yaml",
-    "iris1.yaml",
-    "iris2.yaml",
-    "iris3.yaml",
-    "phoneme1.yaml",
-    "phoneme2.yaml",
-    "phoneme3.yaml"
+    "mnist1.yaml",
+    "mnist2.yaml",  
+    "mnist3.yaml"
 )
 
 # Check if virtual environment exists

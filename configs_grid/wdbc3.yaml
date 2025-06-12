@@ -1,8 +1,9 @@
+name: "wdbc"
 dataset_path: "KEEL/keel_data/wdbc.dat"
 
 seeds: [17, 42, 123, 27, 19]
 
-noise_scale: 1.1
+noise_scale: 0.8
 noise_type: "gaussian"
 label_noise_scale: 0.2
 label_noise_range: [0.0, 0.5]

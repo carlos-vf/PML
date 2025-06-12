@@ -5,7 +5,7 @@ import os
 import numpy as np
 import sys
 # Import your existing experiment functions (you'll create this module next)
-from scripts.pipeline_grid import run_pipeline
+from scripts.grid_pipeline import run_pipeline
 
 
 def main():
