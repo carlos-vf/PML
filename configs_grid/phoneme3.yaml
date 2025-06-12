@@ -1,3 +1,4 @@
+name: "phoneme"
 dataset_path: "KEEL/keel_data/phoneme.dat"
 
 seeds: [17, 42, 123, 27, 19]

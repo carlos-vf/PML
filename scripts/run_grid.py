@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 import argparse
 import yaml
-
-from scripts.pipeline_grid import run_pipeline
+from scripts.grid_pipeline import run_pipeline
 
 
 def main():

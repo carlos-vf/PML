@@ -1,0 +1,2 @@
+n_estimators,bootstrap,max_depth,max_features,mean_accuracy,std_accuracy
+20,True,,sqrt,0.5866666666666667,0.04606758320361752

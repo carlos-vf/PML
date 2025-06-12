@@ -1,3 +1,4 @@
+name: "magic"
 dataset_path: "KEEL/keel_data/magic.dat"
 
 seeds: [17, 42, 123, 27, 19]
