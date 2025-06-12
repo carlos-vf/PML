@@ -1,0 +1,33 @@
+dataset_path: "KEEL/keel_data/iris.dat"
+
+seeds: [17, 42, 123, 27, 19]
+
+noise_scale: 0.8
+noise_type: "gaussian"
+label_noise_scale: 0.2
+label_noise_range: [0.0, 0.5]
+
+models:
+  pdf:
+    n_cascade_estimators: [4, 6]
+    n_trees_pdf: [10, 20, 30]
+    max_depth_pdf: [4,6,8]
+
+  rf:
+    n_estimators: [20, 50, 100, 200]
+
+  df:
+    n_estimators: [2, 3]
+    n_trees_df: [10, 20, 30]
+
+  prf:
+    n_estimators: [20, 50, 100, 200]
+
+  # nn:
+  #   epochs: 20
+  #   batch_size: 16
+  #   hidden_units: 64
+  #   dropout_rate: 0.5
+  #   optimizer: "adam"
+
+  ksvm: {}
