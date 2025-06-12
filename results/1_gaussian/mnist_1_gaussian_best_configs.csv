@@ -1,0 +1,5 @@
+Model,hyperparams,mean_accuracy,std_accuracy
+RF,n_estimators=200,0.817,0.005567764362830031
+PRF,"n_estimators=200, bootstrap=True, max_depth=None, max_features=sqrt",0.8480000000000001,0.004301162633521302
+PDF,"n_cascade_estimators=4, n_trees_pdf=30, max_depth_pdf=8",0.842,0.0029154759474226376
+KSVM,"{'C': 1, 'gamma': 'scale', 'kernel': 'rbf'}",0.895,0.0

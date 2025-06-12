@@ -100,10 +100,10 @@ def run_pipeline(config):
         (X_train_raw, y_train_raw), (X_test_raw, y_test_raw) = mnist_dataloader.load_data()
 
         # Convert to numpy arrays for easier manipulation
-        X_train_raw = np.array(X_train_raw[:80])
-        y_train = np.array(y_train_raw[:80])
-        X_test_raw = np.array(X_test_raw[:20])
-        y_test = np.array(y_test_raw[:20])
+        X_train_raw = np.array(X_train_raw[:400])
+        y_train = np.array(y_train_raw[:400])
+        X_test_raw = np.array(X_test_raw[:100])
+        y_test = np.array(y_test_raw[:100])
 
         # Reshape the 28x28 images into 1D vectors of 784 features
         n_train_samples = X_train_raw.shape[0]
@@ -338,7 +338,7 @@ def run_pipeline(config):
         })
 
     # --- DF grid ---
-    df_cfg = models_config.get('deep_forest', None)
+    df_cfg = models_config.get('df', None)
     if df_cfg is not None:
         df_n_estimators_list = ensure_list(df_cfg.get('n_estimators', 2))
         df_n_trees_list = ensure_list(df_cfg.get('n_trees_df', 10))
