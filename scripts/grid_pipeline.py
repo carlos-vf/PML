@@ -167,7 +167,7 @@ def run_pipeline(config):
 
     base_name = config.get('name', os.path.splitext(os.path.basename(dataset_path))[0])
     title_name = base_name.replace('_', ' ').title()
-
+    
     # To collect best per model
     best_configs = []
 
@@ -188,7 +188,7 @@ def run_pipeline(config):
             accuracies_RF = []
             for seed in seeds:
                 set_all_seeds(seed)
-                rf = RandomForestClassifier(n_estimators=n_estimators, random_state=seed, n_jobs=-1)
+                rf = RandomForestClassifier(n_estimators=n_estimators, random_state=seed, n_jobs=1)
                 rf.fit(X_train_noisy, y_train_noisy)
                 y_pred = rf.predict(X_test)
                 acc = accuracy_score(y_test, y_pred)
@@ -356,7 +356,7 @@ def run_pipeline(config):
                 accuracies_DF = []
                 for seed in seeds:
                     set_all_seeds(seed)
-                    clf = CascadeForestClassifier(n_estimators=n_estimators_df, random_state=seed, n_trees=n_trees_df, n_jobs=-1)
+                    clf = CascadeForestClassifier(n_estimators=n_estimators_df, random_state=seed, n_trees=n_trees_df, n_jobs=1)
                     clf.fit(X_train_noisy, y_train_noisy)
                     y_pred = clf.predict(X_test)
                     acc = accuracy_score(y_test, y_pred)
