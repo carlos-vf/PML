@@ -1,6 +1,6 @@
 Model,hyperparams,mean_accuracy,std_accuracy
-RF,n_estimators=100,0.8771929824561402,0.011095711088310084
-PRF,"n_estimators=100, bootstrap=True, max_depth=None, max_features=sqrt",0.9298245614035089,0.007845852552630867
-DeepForest,"n_estimators=3, n_trees=20",0.8894736842105264,0.015294382258037455
-PDRF,"n_cascade_estimators=4, n_trees_pdrf=30, max_depth_pdrf=8",0.9122807017543859,0.0055478555441550335
-KSVM,"{'C': 0.1, 'gamma': 'scale', 'kernel': 'linear'}",0.8245614035087719,0.0
+RF,n_estimators=50,0.8859649122807017,0.016643566632465124
+PRF,"n_estimators=50, bootstrap=True, max_depth=None, max_features=sqrt",0.968421052631579,0.016269506132448604
+DF,"n_estimators=2, n_trees=30",0.9035087719298247,0.00960916767552922
+PDF,"n_cascade_estimators=4, n_trees_pdf=20, max_depth_pdf=8",0.9526315789473683,0.007017543859649145
+KSVM,"{'C': 0.1, 'gamma': 'scale', 'kernel': 'linear'}",0.8859649122807017,0.0
