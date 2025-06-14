@@ -1,0 +1,31 @@
+dataset_path: "KEEL/keel_data/winequality-red.dat"
+
+seeds: [17, 42, 123, 27, 2727, 32]
+
+noise_scale: 2
+label_noise_scale: 0.2
+noise_type: "gaussian"
+label_noise_range: [0.0, 0.5]
+
+models:
+  pdrf:
+    n_cascade_estimators: 4
+    n_trees_pdrf: 30
+    max_depth_pdrf: 6
+
+  rf:
+    n_estimators: 200
+  deep_forest:
+    n_estimators: 3
+    n_trees_drf: 30
+
+  # neural_network:
+  #   epochs: 20
+  #   batch_size: 16
+  #   hidden_units: 64
+  #   dropout_rate: 0.5
+  #   optimizer: "adam"
+  ksvm: {}         # Empty config is valid
+  prf:             # ← Fix this line!
+    n_estimators: 200
+    bootstrap: true
